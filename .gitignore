@@ -1,0 +1,7 @@
+*.elf
+*.nds
+build/
+.cache/
+compile_commands.json
+.clangd
+
