@@ -5,7 +5,7 @@ int main()
 {
     consoleDemoInit();
 
-    printf("Wow, welcome\n");
+    printf("Ric is big coolio \n");
 
     while (pmMainLoop())
     {
