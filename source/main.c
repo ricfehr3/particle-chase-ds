@@ -1,18 +1,18 @@
+#include "nds/arm9/math.h"
 #include "nds/arm9/trig_lut.h"
 #include "nds/arm9/video.h"
 
+#include "nds/arm9/math.h"
 #include <gl2d.h>
 #include <nds.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#define FIX_SHIFT 8
-
 #define HALF_WIDTH  (SCREEN_WIDTH / 2)
 #define HALF_HEIGHT (SCREEN_HEIGHT / 2)
 
-#define SCREEN_WIDTH_FIXED  intToFixed(SCREEN_WIDTH, FIX_SHIFT)
-#define SCREEN_HEIGHT_FIXED intToFixed(SCREEN_HEIGHT, FIX_SHIFT)
+#define SCREEN_WIDTH_FIXED  inttof32(SCREEN_WIDTH)
+#define SCREEN_HEIGHT_FIXED inttof32(SCREEN_HEIGHT)
 
 int rand_between(int min, int max)
 {
@@ -37,7 +37,7 @@ Vec2d get_rand_screen_coord(void)
     return coord;
 }
 
-#define MAX_VEL intToFixed(1, FIX_SHIFT)
+#define MAX_VEL inttof32(10)
 
 Vec2d get_rand_starting_vel(void)
 {
@@ -52,8 +52,8 @@ Vec2d get_rand_starting_vel(void)
 Vec2d vec2d_fixed_to_int(Vec2d in)
 {
     Vec2d out = {
-        .x = fixedToInt(in.x, FIX_SHIFT),
-        .y = fixedToInt(in.y, FIX_SHIFT),
+        .x = f32toint(in.x),
+        .y = f32toint(in.y),
     };
 
     return out;
@@ -62,8 +62,8 @@ Vec2d vec2d_fixed_to_int(Vec2d in)
 Vec2d vec2d_int_to_fixed(Vec2d in)
 {
     Vec2d out = {
-        .x = intToFixed(in.x, FIX_SHIFT),
-        .y = intToFixed(in.y, FIX_SHIFT),
+        .x = inttof32(in.x),
+        .y = inttof32(in.y),
     };
 
     return out;
@@ -108,7 +108,7 @@ Entity build_default_entity(void)
 }
 
 #define NUM_ENTITIES 100
-#define DT           floatToFixed(1.0f / 60.0f, FIX_SHIFT)
+#define DT           floattof32(1.0f / 2500.0f)
 
 Entity entities[NUM_ENTITIES];
 
@@ -125,10 +125,21 @@ void init_entities(void)
     }
 }
 
+#define SIGN(x) (x > 0) - (x < 0)
+
 void update_rigidbody(RigidBody* rb)
 {
+    int drag = floattof32(0.99);
+
     rb->pos.x += rb->vel.x * DT;
     rb->pos.y += rb->vel.y * DT;
+
+    rb->vel.x += mulf32(rb->acc.x, DT);
+    rb->vel.y += mulf32(rb->acc.y, DT);
+    rb->vel.x = mulf32(rb->vel.x, drag);
+    rb->vel.y = mulf32(rb->vel.y, drag);
+    if(abs(rb->vel.x) < DT) rb->vel.x = 0;
+    if(abs(rb->vel.y) < DT) rb->vel.y = 0;
 
     if(rb->pos.x >= SCREEN_WIDTH_FIXED || rb->pos.x < 0)
     {
@@ -143,9 +154,6 @@ void update_rigidbody(RigidBody* rb)
         rb->pos.y = SCREEN_HEIGHT_FIXED - (rb->pos.y - (SCREEN_HEIGHT_FIXED * itr));
         rb->vel.y = -rb->vel.y;
     }
-
-    rb->vel.x += rb->acc.x * DT;
-    rb->vel.y += rb->acc.y * DT;
 
     rb->acc.x = 0;
     rb->acc.y = 0;
