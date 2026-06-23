@@ -2,7 +2,6 @@
 #include "nds/arm9/trig_lut.h"
 #include "nds/arm9/video.h"
 
-#include "nds/arm9/math.h"
 #include <gl2d.h>
 #include <nds.h>
 #include <stdio.h>
@@ -14,26 +13,30 @@
 #define SCREEN_WIDTH_FIXED  inttof32(SCREEN_WIDTH)
 #define SCREEN_HEIGHT_FIXED inttof32(SCREEN_HEIGHT)
 
-#define DT           floattof32(1.0f / 2500.0f)
-#define MAX_ENTITIES 2500
-#define MAX_GRAVITY 100000
-#define MAX_DRAG floattof32(0.5)
-#define MAX_INIT_VEL inttof32(10)
+#define DT                1 // THIS IS FIXED LOL
+#define MAX_ENTITIES      2500
+#define MAX_GRAVITY       100000
+#define MAX_DRAG          floattof32(0.5)
+#define MAX_INIT_VEL      inttof32(10)
 #define MAX_VERT_STRENGTH inttof32(1000)
 
-int num_entities = 100;
+int num_entities = 1000;
 int init_vel = inttof32(1);
-int gravity_strength = 10000;
+int gravity_strength = 85000;
 int vert_strength = 0;
-int drag = floattof32(0.001);
+//int drag = floattof32(0.001);
+int drag = 64;
+int mass_range = floattof32(0.01); // +/- 1.0 fixed
 
 void print_config(void)
 {
-    iprintf("\x1b[3;1HEntities:  %10d", num_entities);
-    iprintf("\x1b[4;1HReset Vel: %10d", init_vel);
-    iprintf("\x1b[5;1HGrav Well: %10d", gravity_strength);
-    iprintf("\x1b[6;1HGravity:   %10d", vert_strength);
-    iprintf("\x1b[7;1HDrag:      %10d", drag);
+    iprintf("\x1b[3;1HEntities:   %10d", num_entities);
+    iprintf("\x1b[4;1HReset Vel:  %10d", init_vel);
+    iprintf("\x1b[5;1HGrav Well:  %10d", gravity_strength);
+    iprintf("\x1b[6;1HGravity:    %10d", vert_strength);
+    iprintf("\x1b[7;1HDrag:       %10d", drag);
+    iprintf("\x1b[8;1HMass Range: %10d", mass_range);
+    iprintf("\x1b[9;1HDT:         %10d", DT);
 }
 
 int rand_between(int min, int max)
@@ -57,6 +60,11 @@ Vec2d get_rand_screen_coord(void)
     };
 
     return coord;
+}
+
+int get_rand_mass(void)
+{
+    return rand_between(inttof32(1) - mass_range, inttof32(1) + mass_range);
 }
 
 Vec2d get_rand_starting_vel(void)
@@ -96,6 +104,7 @@ typedef struct
     Vec2d pos; // position, fixed point
     Vec2d vel; // velocity, fixed point
     Vec2d acc; // acceleration, fixed point
+    int mass;
 } RigidBody;
 
 #define DEFAULT_RIGIDBODY     \
@@ -103,6 +112,7 @@ typedef struct
         .pos = DEFAULT_VEC2D, \
         .vel = DEFAULT_VEC2D, \
         .acc = DEFAULT_VEC2D, \
+        .mass = inttof32(1),  \
     }
 
 #define COLOR15_WHITE RGB15(0x1F, 0x1F, 0x1F)
@@ -133,12 +143,15 @@ void init_entities(bool reset_pos)
 {
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
-        if(reset_pos)
+        if (reset_pos)
             entities[i] = build_default_entity();
+
+        if(reset_pos)
+            entities[i].rb.mass = get_rand_mass();
 
         Vec2d rand_screen_pos = get_rand_screen_coord();
 
-        if(reset_pos)
+        if (reset_pos)
             entities[i].rb.pos = vec2d_int_to_fixed(rand_screen_pos);
 
         entities[i].rb.vel = get_rand_starting_vel();
@@ -156,7 +169,6 @@ int vec2_dist(Vec2d a, Vec2d b)
     return sqrt32(mulf32(dx, dx) + mulf32(dy, dy));
 }
 
-
 void update_rigidbody(RigidBody* rb)
 {
     rb->pos.x += rb->vel.x * DT;
@@ -166,27 +178,30 @@ void update_rigidbody(RigidBody* rb)
     rb->vel.y += mulf32(rb->acc.y, DT);
     rb->vel.x = mulf32(rb->vel.x, inttof32(1) - drag);
     rb->vel.y = mulf32(rb->vel.y, inttof32(1) - drag);
-    if(abs(rb->vel.x) < DT) rb->vel.x = 0;
-    if(abs(rb->vel.y) < DT) rb->vel.y = 0;
+    if (abs(rb->vel.x) < 10)
+        rb->vel.x = 0;
+    if (abs(rb->vel.y) < 10)
+        rb->vel.y = 0;
 
-    if(rb->pos.x >= SCREEN_WIDTH_FIXED || rb->pos.x < 0)
+    if (rb->pos.x >= SCREEN_WIDTH_FIXED || rb->pos.x < 0)
     {
         int itr = (rb->pos.x < 0) ? -1 : 1;
         rb->pos.x = SCREEN_WIDTH_FIXED - (rb->pos.x - (SCREEN_WIDTH_FIXED * itr));
         rb->vel.x = -rb->vel.x;
     }
 
-    if(rb->pos.y >= SCREEN_HEIGHT_FIXED || rb->pos.y < 0)
+    if (rb->pos.y >= SCREEN_HEIGHT_FIXED || rb->pos.y < 0)
     {
         int itr = (rb->pos.y < 0) ? -1 : 1;
         rb->pos.y = SCREEN_HEIGHT_FIXED - (rb->pos.y - (SCREEN_HEIGHT_FIXED * itr));
         rb->vel.y = -rb->vel.y;
     }
 
-    if(has_grav_point)
+    if (has_grav_point)
     {
         int dist = vec2_dist(rb->pos, grav_point);
-        int scalar = divf32(gravity_strength, dist);
+        int scalar = divf32(mulf32(gravity_strength, rb->mass), dist);
+        //int scalar = divf32(gravity_strength, dist);
         rb->acc.x = mulf32(grav_point.x - rb->pos.x, scalar);
         rb->acc.y = mulf32(grav_point.y - rb->pos.y, scalar);
     }
@@ -219,11 +234,11 @@ void display_entities(void)
     {
         Entity* e = &entities[i];
         glPutPixel(e->screen_pos.x, e->screen_pos.y, e->color);
-        if(has_grav_point)
+        if (has_grav_point)
         {
-            int bb = 1; // box boundary
+            int bb = 1;                                // box boundary
             Vec2d bo = vec2d_fixed_to_int(grav_point); // box origin
-            glBoxFilled(bo.x-bb, bo.y-bb, bo.x+bb, bo.y+bb, RGB15(0, 0x1F, 0x1F));
+            glBoxFilled(bo.x - bb, bo.y - bb, bo.x + bb, bo.y + bb, RGB15(0, 0x1F, 0x1F));
         }
     }
 
@@ -241,7 +256,7 @@ int main()
     glScreen2D();
 
     int frame = 0;
-	touchPosition touchXY;
+    touchPosition touchXY;
 
     init_entities(true);
 
@@ -249,64 +264,76 @@ int main()
     {
         frame++;
 
-		has_grav_point = touchRead(&touchXY);
+        has_grav_point = touchRead(&touchXY);
 
-		scanKeys();
-		int pressed = keysDown();
-		if(pressed & KEY_UP)
+        scanKeys();
+        int pressed = keysDown();
+        if (pressed & KEY_UP)
         {
             int incr = (num_entities >= 100) ? 100 : (num_entities >= 10) ? 10 : 1;
             num_entities += incr;
-            if(num_entities > MAX_ENTITIES) num_entities = MAX_ENTITIES;
+            if (num_entities > MAX_ENTITIES)
+                num_entities = MAX_ENTITIES;
         }
-		if(pressed & KEY_DOWN)
+        if (pressed & KEY_DOWN)
         {
             int incr = (num_entities > 100) ? 100 : (num_entities > 10) ? 10 : 1;
             num_entities -= incr;
-            if(num_entities < 1) num_entities = 1;
+            if (num_entities < 1)
+                num_entities = 1;
         }
-		if(pressed & KEY_RIGHT)
+        if (pressed & KEY_RIGHT)
         {
             gravity_strength += 1000;
-            if(gravity_strength > MAX_GRAVITY) gravity_strength = MAX_GRAVITY;
+            if (gravity_strength > MAX_GRAVITY)
+                gravity_strength = MAX_GRAVITY;
         }
-		if(pressed & KEY_LEFT)
+        if (pressed & KEY_LEFT)
         {
             gravity_strength -= 1000;
-            if(gravity_strength < 1000) gravity_strength = 1000;
+            if (gravity_strength < 1000)
+                gravity_strength = 1000;
         }
-		if(pressed & KEY_X)
+        if (pressed & KEY_X)
         {
             drag += floattof32(0.001);
-            if(drag > MAX_DRAG) drag = MAX_DRAG;
+            if (drag > MAX_DRAG)
+                drag = MAX_DRAG;
         }
-		if(pressed & KEY_Y)
+        if (pressed & KEY_Y)
         {
             drag -= floattof32(0.001);
-            if(drag < 0) drag = 0;
+            if (drag < 0)
+                drag = 0;
         }
-		if(pressed & KEY_A)
+        if (pressed & KEY_A)
         {
             init_vel += floattof32(0.1);
-            if(init_vel > MAX_INIT_VEL) init_vel = MAX_INIT_VEL;
+            if (init_vel > MAX_INIT_VEL)
+                init_vel = MAX_INIT_VEL;
         }
-		if(pressed & KEY_B)
+        if (pressed & KEY_B)
         {
             init_vel -= floattof32(0.1);
-            if(init_vel < 0) init_vel = 0;
+            if (init_vel < 0)
+                init_vel = 0;
         }
-		if(pressed & KEY_R)
+        if (pressed & KEY_R)
         {
             vert_strength += inttof32(100);
-            if(vert_strength > MAX_VERT_STRENGTH) vert_strength = MAX_VERT_STRENGTH;
+            if (vert_strength > MAX_VERT_STRENGTH)
+                vert_strength = MAX_VERT_STRENGTH;
         }
-		if(pressed & KEY_L)
+        if (pressed & KEY_L)
         {
             vert_strength -= inttof32(100);
-            if(vert_strength < 0) vert_strength = 0;
+            if (vert_strength < 0)
+                vert_strength = 0;
         }
-		if(pressed & KEY_START) init_entities(true);
-		if(pressed & KEY_SELECT) init_entities(false);
+        if (pressed & KEY_START)
+            init_entities(true);
+        if (pressed & KEY_SELECT)
+            init_entities(false);
 
         grav_point.x = inttof32(touchXY.px);
         grav_point.y = inttof32(touchXY.py);
