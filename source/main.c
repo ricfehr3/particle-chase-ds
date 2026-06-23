@@ -6,10 +6,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define FIX_SHIFT 8
+
 #define HALF_WIDTH  (SCREEN_WIDTH / 2)
 #define HALF_HEIGHT (SCREEN_HEIGHT / 2)
 
-#define FIX_SHIFT 8
+#define SCREEN_WIDTH_FIXED  intToFixed(SCREEN_WIDTH, FIX_SHIFT)
+#define SCREEN_HEIGHT_FIXED intToFixed(SCREEN_HEIGHT, FIX_SHIFT)
 
 int rand_between(int min, int max)
 {
@@ -32,6 +35,18 @@ Vec2d get_rand_screen_coord(void)
     };
 
     return coord;
+}
+
+#define MAX_VEL intToFixed(1, FIX_SHIFT)
+
+Vec2d get_rand_starting_vel(void)
+{
+    Vec2d vec = {
+        .x = rand_between(-MAX_VEL, MAX_VEL),
+        .y = rand_between(-MAX_VEL, MAX_VEL),
+    };
+
+    return vec;
 }
 
 Vec2d vec2d_fixed_to_int(Vec2d in)
@@ -93,7 +108,7 @@ Entity build_default_entity(void)
 }
 
 #define NUM_ENTITIES 100
-#define DT           floatToFixed(1.0f / 60.0f)
+#define DT           floatToFixed(1.0f / 60.0f, FIX_SHIFT)
 
 Entity entities[NUM_ENTITIES];
 
@@ -106,7 +121,34 @@ void init_entities(void)
         Vec2d rand_screen_pos = get_rand_screen_coord();
 
         entities[i].rb.pos = vec2d_int_to_fixed(rand_screen_pos);
+        entities[i].rb.vel = get_rand_starting_vel();
     }
+}
+
+void update_rigidbody(RigidBody* rb)
+{
+    rb->pos.x += rb->vel.x * DT;
+    rb->pos.y += rb->vel.y * DT;
+
+    if(rb->pos.x >= SCREEN_WIDTH_FIXED || rb->pos.x < 0)
+    {
+        int itr = (rb->pos.x < 0) ? -1 : 1;
+        rb->pos.x = SCREEN_WIDTH_FIXED - (rb->pos.x - (SCREEN_WIDTH_FIXED * itr));
+        rb->vel.x = -rb->vel.x;
+    }
+
+    if(rb->pos.y >= SCREEN_HEIGHT_FIXED || rb->pos.y < 0)
+    {
+        int itr = (rb->pos.y < 0) ? -1 : 1;
+        rb->pos.y = SCREEN_HEIGHT_FIXED - (rb->pos.y - (SCREEN_HEIGHT_FIXED * itr));
+        rb->vel.y = -rb->vel.y;
+    }
+
+    rb->vel.x += rb->acc.x * DT;
+    rb->vel.y += rb->acc.y * DT;
+
+    rb->acc.x = 0;
+    rb->acc.y = 0;
 }
 
 void update_entities(int frame)
@@ -116,6 +158,8 @@ void update_entities(int frame)
     for (int i = 0; i < NUM_ENTITIES; i++)
     {
         Entity* e = &entities[i];
+
+        update_rigidbody(&e->rb);
 
         e->screen_pos = vec2d_fixed_to_int(e->rb.pos);
     }
