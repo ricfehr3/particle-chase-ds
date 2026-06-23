@@ -107,7 +107,7 @@ Entity build_default_entity(void)
     return entity;
 }
 
-#define NUM_ENTITIES 100
+#define NUM_ENTITIES 1000
 #define DT           floattof32(1.0f / 2500.0f)
 
 Entity entities[NUM_ENTITIES];
@@ -126,6 +126,18 @@ void init_entities(void)
 }
 
 #define SIGN(x) (x > 0) - (x < 0)
+
+Vec2d grav_point = DEFAULT_VEC2D;
+bool has_grav_point = false;
+
+int vec2_dist(Vec2d a, Vec2d b)
+{
+    int dx = b.x - a.x;
+    int dy = b.y - a.y;
+
+    return sqrt32(mulf32(dx, dx) + mulf32(dy, dy));
+}
+
 
 void update_rigidbody(RigidBody* rb)
 {
@@ -155,8 +167,18 @@ void update_rigidbody(RigidBody* rb)
         rb->vel.y = -rb->vel.y;
     }
 
-    rb->acc.x = 0;
-    rb->acc.y = 0;
+    if(has_grav_point)
+    {
+        int dist = vec2_dist(rb->pos, grav_point);
+        int scalar = divf32(10000, dist);
+        rb->acc.x = mulf32(grav_point.x - rb->pos.x, scalar);
+        rb->acc.y = mulf32(grav_point.y - rb->pos.y, scalar);
+    }
+    else
+    {
+        rb->acc.x = 0;
+        rb->acc.y = 0;
+    }
 }
 
 void update_entities(int frame)
@@ -197,6 +219,7 @@ int main()
     glScreen2D();
 
     int frame = 0;
+	touchPosition touchXY;
 
     init_entities();
 
@@ -205,6 +228,12 @@ int main()
     while (pmMainLoop())
     {
         frame++;
+		has_grav_point = touchRead(&touchXY);
+
+        grav_point.x = inttof32(touchXY.px);
+        grav_point.y = inttof32(touchXY.py);
+
+        iprintf("\x1b[1;1HGravity Demo, X: %d, Y: %d", touchXY.px, touchXY.py);
 
         update_entities(frame);
 
