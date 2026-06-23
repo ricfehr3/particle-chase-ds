@@ -14,6 +14,28 @@
 #define SCREEN_WIDTH_FIXED  inttof32(SCREEN_WIDTH)
 #define SCREEN_HEIGHT_FIXED inttof32(SCREEN_HEIGHT)
 
+#define DT           floattof32(1.0f / 2500.0f)
+#define MAX_ENTITIES 2500
+#define MAX_GRAVITY 100000
+#define MAX_DRAG floattof32(0.5)
+#define MAX_INIT_VEL inttof32(10)
+#define MAX_VERT_STRENGTH inttof32(1000)
+
+int num_entities = 100;
+int init_vel = inttof32(1);
+int gravity_strength = 10000;
+int vert_strength = 0;
+int drag = floattof32(0.001);
+
+void print_config(void)
+{
+    iprintf("\x1b[3;1HEntities:  %10d", num_entities);
+    iprintf("\x1b[4;1HReset Vel: %10d", init_vel);
+    iprintf("\x1b[5;1HGrav Well: %10d", gravity_strength);
+    iprintf("\x1b[6;1HGravity:   %10d", vert_strength);
+    iprintf("\x1b[7;1HDrag:      %10d", drag);
+}
+
 int rand_between(int min, int max)
 {
     return min + rand() % (max - min + 1);
@@ -37,13 +59,11 @@ Vec2d get_rand_screen_coord(void)
     return coord;
 }
 
-#define MAX_VEL inttof32(10)
-
 Vec2d get_rand_starting_vel(void)
 {
     Vec2d vec = {
-        .x = rand_between(-MAX_VEL, MAX_VEL),
-        .y = rand_between(-MAX_VEL, MAX_VEL),
+        .x = rand_between(-init_vel, init_vel),
+        .y = rand_between(-init_vel, init_vel),
     };
 
     return vec;
@@ -107,25 +127,23 @@ Entity build_default_entity(void)
     return entity;
 }
 
-#define NUM_ENTITIES 1000
-#define DT           floattof32(1.0f / 2500.0f)
+Entity entities[MAX_ENTITIES];
 
-Entity entities[NUM_ENTITIES];
-
-void init_entities(void)
+void init_entities(bool reset_pos)
 {
-    for (int i = 0; i < NUM_ENTITIES; i++)
+    for (int i = 0; i < MAX_ENTITIES; i++)
     {
-        entities[i] = build_default_entity();
+        if(reset_pos)
+            entities[i] = build_default_entity();
 
         Vec2d rand_screen_pos = get_rand_screen_coord();
 
-        entities[i].rb.pos = vec2d_int_to_fixed(rand_screen_pos);
+        if(reset_pos)
+            entities[i].rb.pos = vec2d_int_to_fixed(rand_screen_pos);
+
         entities[i].rb.vel = get_rand_starting_vel();
     }
 }
-
-#define SIGN(x) (x > 0) - (x < 0)
 
 Vec2d grav_point = DEFAULT_VEC2D;
 bool has_grav_point = false;
@@ -141,15 +159,13 @@ int vec2_dist(Vec2d a, Vec2d b)
 
 void update_rigidbody(RigidBody* rb)
 {
-    int drag = floattof32(0.99);
-
     rb->pos.x += rb->vel.x * DT;
     rb->pos.y += rb->vel.y * DT;
 
     rb->vel.x += mulf32(rb->acc.x, DT);
     rb->vel.y += mulf32(rb->acc.y, DT);
-    rb->vel.x = mulf32(rb->vel.x, drag);
-    rb->vel.y = mulf32(rb->vel.y, drag);
+    rb->vel.x = mulf32(rb->vel.x, inttof32(1) - drag);
+    rb->vel.y = mulf32(rb->vel.y, inttof32(1) - drag);
     if(abs(rb->vel.x) < DT) rb->vel.x = 0;
     if(abs(rb->vel.y) < DT) rb->vel.y = 0;
 
@@ -170,14 +186,14 @@ void update_rigidbody(RigidBody* rb)
     if(has_grav_point)
     {
         int dist = vec2_dist(rb->pos, grav_point);
-        int scalar = divf32(10000, dist);
+        int scalar = divf32(gravity_strength, dist);
         rb->acc.x = mulf32(grav_point.x - rb->pos.x, scalar);
         rb->acc.y = mulf32(grav_point.y - rb->pos.y, scalar);
     }
     else
     {
         rb->acc.x = 0;
-        rb->acc.y = 0;
+        rb->acc.y = vert_strength;
     }
 }
 
@@ -185,7 +201,7 @@ void update_entities(int frame)
 {
     (void)frame;
 
-    for (int i = 0; i < NUM_ENTITIES; i++)
+    for (int i = 0; i < num_entities; i++)
     {
         Entity* e = &entities[i];
 
@@ -199,10 +215,16 @@ void display_entities(void)
 {
     glBegin2D();
 
-    for (int i = 0; i < NUM_ENTITIES; i++)
+    for (int i = 0; i < num_entities; i++)
     {
         Entity* e = &entities[i];
         glPutPixel(e->screen_pos.x, e->screen_pos.y, e->color);
+        if(has_grav_point)
+        {
+            int bb = 1; // box boundary
+            Vec2d bo = vec2d_fixed_to_int(grav_point); // box origin
+            glBoxFilled(bo.x-bb, bo.y-bb, bo.x+bb, bo.y+bb, RGB15(0, 0x1F, 0x1F));
+        }
     }
 
     glEnd2D();
@@ -221,23 +243,79 @@ int main()
     int frame = 0;
 	touchPosition touchXY;
 
-    init_entities();
-
-    iprintf("\x1b[1;1HGravity Demo");
+    init_entities(true);
 
     while (pmMainLoop())
     {
         frame++;
+
 		has_grav_point = touchRead(&touchXY);
+
+		scanKeys();
+		int pressed = keysDown();
+		if(pressed & KEY_UP)
+        {
+            int incr = (num_entities >= 100) ? 100 : (num_entities >= 10) ? 10 : 1;
+            num_entities += incr;
+            if(num_entities > MAX_ENTITIES) num_entities = MAX_ENTITIES;
+        }
+		if(pressed & KEY_DOWN)
+        {
+            int incr = (num_entities > 100) ? 100 : (num_entities > 10) ? 10 : 1;
+            num_entities -= incr;
+            if(num_entities < 1) num_entities = 1;
+        }
+		if(pressed & KEY_RIGHT)
+        {
+            gravity_strength += 1000;
+            if(gravity_strength > MAX_GRAVITY) gravity_strength = MAX_GRAVITY;
+        }
+		if(pressed & KEY_LEFT)
+        {
+            gravity_strength -= 1000;
+            if(gravity_strength < 1000) gravity_strength = 1000;
+        }
+		if(pressed & KEY_X)
+        {
+            drag += floattof32(0.001);
+            if(drag > MAX_DRAG) drag = MAX_DRAG;
+        }
+		if(pressed & KEY_Y)
+        {
+            drag -= floattof32(0.001);
+            if(drag < 0) drag = 0;
+        }
+		if(pressed & KEY_A)
+        {
+            init_vel += floattof32(0.1);
+            if(init_vel > MAX_INIT_VEL) init_vel = MAX_INIT_VEL;
+        }
+		if(pressed & KEY_B)
+        {
+            init_vel -= floattof32(0.1);
+            if(init_vel < 0) init_vel = 0;
+        }
+		if(pressed & KEY_R)
+        {
+            vert_strength += inttof32(100);
+            if(vert_strength > MAX_VERT_STRENGTH) vert_strength = MAX_VERT_STRENGTH;
+        }
+		if(pressed & KEY_L)
+        {
+            vert_strength -= inttof32(100);
+            if(vert_strength < 0) vert_strength = 0;
+        }
+		if(pressed & KEY_START) init_entities(true);
+		if(pressed & KEY_SELECT) init_entities(false);
 
         grav_point.x = inttof32(touchXY.px);
         grav_point.y = inttof32(touchXY.py);
 
-        iprintf("\x1b[1;1HGravity Demo, X: %d, Y: %d", touchXY.px, touchXY.py);
-
         update_entities(frame);
 
         display_entities();
+
+        print_config();
 
         glFlush(0);
     }
