@@ -1,6 +1,7 @@
 #include "nds/arm9/math.h"
 #include "nds/arm9/trig_lut.h"
 #include "nds/arm9/video.h"
+#include "vec2d.h"
 
 #include <gl2d.h>
 #include <nds.h>
@@ -13,20 +14,28 @@
 #define SCREEN_WIDTH_FIXED  inttof32(SCREEN_WIDTH)
 #define SCREEN_HEIGHT_FIXED inttof32(SCREEN_HEIGHT)
 
-#define DT                1 // THIS IS FIXED LOL
+#define DT                floattof32(0.1)
 #define MAX_ENTITIES      2500
 #define MAX_GRAVITY       100000
 #define MAX_DRAG          floattof32(0.5)
 #define MAX_INIT_VEL      inttof32(10)
-#define MAX_VERT_STRENGTH inttof32(1000)
+#define MAX_VERT_STRENGTH 1000
 
 int num_entities = 1000;
-int init_vel = inttof32(1);
-int gravity_strength = 85000;
-int vert_strength = 0;
-//int drag = floattof32(0.001);
+int init_vel = inttof32(10);
+int gravity_strength = inttof32(10);
+int vert_strength = inttof32(10);
+// int drag = floattof32(0.001);
 int drag = 64;
 int mass_range = floattof32(0.01); // +/- 1.0 fixed
+
+typedef struct
+{
+    Vec2d pos;
+    int strength;
+    bool on;
+    // add movement script based on frame length
+} GravWell;
 
 void print_config(void)
 {
@@ -45,12 +54,6 @@ int rand_between(int min, int max)
 }
 
 typedef short Color15;
-
-typedef struct
-{
-    int x;
-    int y;
-} Vec2d;
 
 Vec2d get_rand_screen_coord(void)
 {
@@ -76,28 +79,6 @@ Vec2d get_rand_starting_vel(void)
 
     return vec;
 }
-
-Vec2d vec2d_fixed_to_int(Vec2d in)
-{
-    Vec2d out = {
-        .x = f32toint(in.x),
-        .y = f32toint(in.y),
-    };
-
-    return out;
-}
-
-Vec2d vec2d_int_to_fixed(Vec2d in)
-{
-    Vec2d out = {
-        .x = inttof32(in.x),
-        .y = inttof32(in.y),
-    };
-
-    return out;
-}
-
-#define DEFAULT_VEC2D {.x = 0, .y = 0}
 
 typedef struct
 {
@@ -146,7 +127,7 @@ void init_entities(bool reset_pos)
         if (reset_pos)
             entities[i] = build_default_entity();
 
-        if(reset_pos)
+        if (reset_pos)
             entities[i].rb.mass = get_rand_mass();
 
         Vec2d rand_screen_pos = get_rand_screen_coord();
@@ -158,58 +139,61 @@ void init_entities(bool reset_pos)
     }
 }
 
-Vec2d grav_point = DEFAULT_VEC2D;
+// Vec2d grav_point = DEFAULT_VEC2D;
 bool has_grav_point = false;
 
-int vec2_dist(Vec2d a, Vec2d b)
-{
-    int dx = b.x - a.x;
-    int dy = b.y - a.y;
+#define MAX_GRAV_POINTS 5
+GravWell grav_points[MAX_GRAV_POINTS];
 
-    return sqrt32(mulf32(dx, dx) + mulf32(dy, dy));
-}
+#define SIGN(x) ((x > 0) - (x < 0))
 
 void update_rigidbody(RigidBody* rb)
 {
-    rb->pos.x += rb->vel.x * DT;
-    rb->pos.y += rb->vel.y * DT;
+    bool has_point = false;
 
-    rb->vel.x += mulf32(rb->acc.x, DT);
-    rb->vel.y += mulf32(rb->acc.y, DT);
-    rb->vel.x = mulf32(rb->vel.x, inttof32(1) - drag);
-    rb->vel.y = mulf32(rb->vel.y, inttof32(1) - drag);
-    if (abs(rb->vel.x) < 10)
+    for (int i = 0; i < MAX_GRAV_POINTS; i++)
+    {
+        if (!grav_points[i].on)
+            continue;
+        has_point = true;
+        int dist = vec2_fixed_dist(rb->pos, grav_points[i].pos);
+        int scalar = divf32(mulf32(grav_points[i].strength, rb->mass), dist);
+        // int scalar = divf32(gravity_strength, dist);
+        rb->acc.x += mulf32(grav_points[i].pos.x - rb->pos.x, scalar);
+        rb->acc.y += mulf32(grav_points[i].pos.y - rb->pos.y, scalar);
+    }
+
+    if (!has_point)
+    {
+        rb->acc.x = 0;
+        rb->acc.y = vert_strength;
+    }
+
+    rb->vel = vec2d_add(rb->vel, vec2d_fixed_scalar_mult(rb->acc, DT));
+    rb->vel = vec2d_fixed_scalar_mult(rb->vel, inttof32(1) - drag);
+
+    const int epsilon = 10;
+    if (abs(rb->vel.x) < epsilon)
         rb->vel.x = 0;
-    if (abs(rb->vel.y) < 10)
+    if (abs(rb->vel.y) < epsilon)
         rb->vel.y = 0;
+
+    rb->pos = vec2d_add(rb->pos, vec2d_fixed_scalar_mult(rb->vel, DT));
 
     if (rb->pos.x >= SCREEN_WIDTH_FIXED || rb->pos.x < 0)
     {
-        int itr = (rb->pos.x < 0) ? -1 : 1;
-        rb->pos.x = SCREEN_WIDTH_FIXED - (rb->pos.x - (SCREEN_WIDTH_FIXED * itr));
+        rb->pos.x = SCREEN_WIDTH_FIXED - (rb->pos.x - (SCREEN_WIDTH_FIXED * SIGN(rb->pos.x)));
         rb->vel.x = -rb->vel.x;
     }
 
     if (rb->pos.y >= SCREEN_HEIGHT_FIXED || rb->pos.y < 0)
     {
-        int itr = (rb->pos.y < 0) ? -1 : 1;
-        rb->pos.y = SCREEN_HEIGHT_FIXED - (rb->pos.y - (SCREEN_HEIGHT_FIXED * itr));
+        rb->pos.y = SCREEN_HEIGHT_FIXED - (rb->pos.y - (SCREEN_HEIGHT_FIXED * SIGN(rb->pos.y)));
         rb->vel.y = -rb->vel.y;
     }
 
-    if (has_grav_point)
-    {
-        int dist = vec2_dist(rb->pos, grav_point);
-        int scalar = divf32(mulf32(gravity_strength, rb->mass), dist);
-        //int scalar = divf32(gravity_strength, dist);
-        rb->acc.x = mulf32(grav_point.x - rb->pos.x, scalar);
-        rb->acc.y = mulf32(grav_point.y - rb->pos.y, scalar);
-    }
-    else
-    {
-        rb->acc.x = 0;
-        rb->acc.y = vert_strength;
-    }
+    rb->acc.x = 0;
+    rb->acc.y = 0;
 }
 
 void update_entities(int frame)
@@ -234,15 +218,37 @@ void display_entities(void)
     {
         Entity* e = &entities[i];
         glPutPixel(e->screen_pos.x, e->screen_pos.y, e->color);
-        if (has_grav_point)
+        for (int i = 0; i < MAX_GRAV_POINTS; i++)
         {
-            int bb = 1;                                // box boundary
-            Vec2d bo = vec2d_fixed_to_int(grav_point); // box origin
+            if (!grav_points[i].on)
+                continue;
+            int bb = 1;                                        // box boundary
+            Vec2d bo = vec2d_fixed_to_int(grav_points[i].pos); // box origin
             glBoxFilled(bo.x - bb, bo.y - bb, bo.x + bb, bo.y + bb, RGB15(0, 0x1F, 0x1F));
         }
     }
 
     glEnd2D();
+}
+
+int register_grav_point(Vec2d point, int strength)
+{
+    for (int i = 0; i < MAX_GRAV_POINTS; i++)
+    {
+        if (grav_points[i].on)
+            continue;
+        grav_points[i].strength = strength;
+        grav_points[i].pos = point;
+        grav_points[i].on = true;
+        return i;
+    }
+    return -1;
+}
+
+void remove_grav_point(unsigned int offset)
+{
+    if (offset < MAX_GRAV_POINTS)
+        grav_points[offset].on = false;
 }
 
 int main()
@@ -259,6 +265,13 @@ int main()
     touchPosition touchXY;
 
     init_entities(true);
+
+    Vec2d middle = {
+        .x = inttof32(HALF_WIDTH),
+        .y = inttof32(HALF_HEIGHT),
+    };
+
+    register_grav_point(middle, floattof32(100));
 
     while (pmMainLoop())
     {
@@ -320,13 +333,13 @@ int main()
         }
         if (pressed & KEY_R)
         {
-            vert_strength += inttof32(100);
+            vert_strength += 100;
             if (vert_strength > MAX_VERT_STRENGTH)
                 vert_strength = MAX_VERT_STRENGTH;
         }
         if (pressed & KEY_L)
         {
-            vert_strength -= inttof32(100);
+            vert_strength -= 100;
             if (vert_strength < 0)
                 vert_strength = 0;
         }
@@ -335,8 +348,14 @@ int main()
         if (pressed & KEY_SELECT)
             init_entities(false);
 
-        grav_point.x = inttof32(touchXY.px);
-        grav_point.y = inttof32(touchXY.py);
+        Vec2d touch_fixed = {
+            .x = inttof32(touchXY.px),
+            .y = inttof32(touchXY.py),
+        };
+
+        int reg = -1;
+        if (has_grav_point)
+            reg = register_grav_point(touch_fixed, gravity_strength);
 
         update_entities(frame);
 
@@ -345,6 +364,9 @@ int main()
         print_config();
 
         glFlush(0);
+
+        if (has_grav_point)
+            remove_grav_point(reg);
     }
 
     return 0;
