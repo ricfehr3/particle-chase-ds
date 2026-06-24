@@ -31,7 +31,7 @@ int gravity_strength = inttof32(10);
 int vert_strength = inttof32(10);
 // int drag = floattof32(0.001);
 int drag = 100;
-int mass_range = floattof32(0.01); // +/- 1.0 fixed
+int mass_range = floattof32(0.1); // +/- 1.0 fixed
 
 typedef struct
 {
@@ -143,7 +143,6 @@ void init_entities(bool reset_pos)
     }
 }
 
-// Vec2d grav_point = DEFAULT_VEC2D;
 bool has_grav_point = false;
 
 #define MAX_GRAV_POINTS 5
@@ -162,9 +161,12 @@ void update_rigidbody(RigidBody* rb)
         has_point = true;
         int dist = vec2_fixed_dist(rb->pos, grav_points[i].pos);
         int scalar = divf32(mulf32(grav_points[i].strength, rb->mass), dist);
-        // int scalar = divf32(gravity_strength, dist);
-        rb->acc.x += mulf32(grav_points[i].pos.x - rb->pos.x, scalar);
-        rb->acc.y += mulf32(grav_points[i].pos.y - rb->pos.y, scalar);
+        // this is right
+        //Vec2d dir = vec2d_normalize(vec2d_sub(grav_points[i].pos, rb->pos));
+        // but this is fun
+        Vec2d dir = vec2d_sub(grav_points[i].pos, rb->pos);
+        rb->acc.x += mulf32(dir.x, scalar);
+        rb->acc.y += mulf32(dir.y, scalar);
     }
 
     if (!has_point)
@@ -255,6 +257,14 @@ void remove_grav_point(unsigned int offset)
         grav_points[offset].on = false;
 }
 
+void remove_all_grav_points(void)
+{
+    for(int i = 0; i < MAX_GRAV_POINTS; i++)
+    {
+        grav_points[i].on = false;
+    }
+}
+
 typedef struct {
 } Widget;
 
@@ -327,11 +337,12 @@ int main()
 	for(i = 0; i< 32*16; i++)
 		SPRITE_GFX_SUB[i] = ball.image.data16[i];
 
+    int ball_center_offset = inttof32(16);
 	Sprite sprites[1];
 	for(i = 0; i < 1; i++) {
 		//random place and speed
-		sprites[i].x = rand() & 0xFFFF;
-		sprites[i].y = rand() & 0x7FFF;
+		sprites[i].x = inttof32(HALF_WIDTH - ball_center_offset);
+		sprites[i].y = inttof32(HALF_HEIGHT);
 		sprites[i].dx = (rand() & 0xFF) + 0x100;
 		sprites[i].dy = (rand() & 0xFF) + 0x100;
 
@@ -350,7 +361,7 @@ int main()
 	}
 
     // make this configurable
-	BG_PALETTE_SUB[0] = RGB15(10,10,10);
+	BG_PALETTE_SUB[0] = RGB15(0,1,5);
 	//BG_PALETTE_SUB[1] = RGB15(0,16,0);
 	//BG_PALETTE_SUB[2] = RGB15(0,0,31);
 
@@ -359,6 +370,11 @@ int main()
         frame++;
 
         has_grav_point = touchRead(&touchXY);
+
+        if(has_grav_point)
+            sprites[0].x = inttof32(touchXY.px) - ball_center_offset;
+        else
+            sprites[0].x = inttof32(HALF_WIDTH) - ball_center_offset;
 
         scanKeys();
         int pressed = keysDownRepeat();
@@ -425,14 +441,23 @@ int main()
                 vert_strength = 0;
         }
         if (pressed & KEY_START)
+        {
+            if(has_grav_point)
+                remove_all_grav_points();
             init_entities(true);
-        if (pressed & KEY_SELECT)
-            init_entities(false);
+        }
 
         Vec2d touch_fixed = {
             .x = inttof32(touchXY.px),
             .y = inttof32(touchXY.py),
         };
+
+        if (pressed & KEY_SELECT)
+        {
+            if(has_grav_point)
+                register_grav_point(touch_fixed, gravity_strength);
+            init_entities(false);
+        }
 
         int reg = -1;
         if (has_grav_point)

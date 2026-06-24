@@ -59,3 +59,27 @@ Vec2d vec2d_add(Vec2d a, Vec2d b)
 
     return out;
 }
+
+Vec2d vec2d_sub(Vec2d a, Vec2d b)
+{
+    Vec2d out = {
+        .x = a.x - b.x,
+        .y = a.y - b.y,
+    };
+
+    return out;
+}
+
+Vec2d vec2d_normalize(Vec2d v)
+{
+    int len = sqrt32(mulf32(v.x, v.x) + mulf32(v.y, v.y));
+
+    if (len == 0)
+        return (Vec2d){0, 0};
+
+    return (Vec2d){
+        divf32(v.x, len),
+        divf32(v.y, len)
+    };
+}
+

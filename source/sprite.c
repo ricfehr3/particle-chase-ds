@@ -1,4 +1,5 @@
 #include "sprite.h"
+#include "nds/arm9/math.h"
 #include "sys/_types.h"
 
 SpriteEntry OAMCopySub[128];
@@ -22,8 +23,8 @@ void initOAM(void)
 
 void MoveSprite(Sprite* sp)
 {
-    int x = sp->x >> 8;
-    int y = sp->y >> 8;
+    int x = f32toint(sp->x);
+    int y = f32toint(sp->y);
 
     sp->oam->x = x;
     sp->oam->y = y;
