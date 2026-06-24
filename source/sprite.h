@@ -1,5 +1,4 @@
-#ifndef SPRITE_H
-#define SPRITE_H
+#pragma once
 
 #include <nds.h>
 
@@ -17,5 +16,3 @@ void initOAM(void);
 void MoveSprite(Sprite* sp);
 void updateOAM(void);
 SpriteEntry* getOAMCopySub(unsigned int at);
-
-#endif // SPRITE_H
