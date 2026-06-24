@@ -1,7 +1,11 @@
 #include "nds/arm9/math.h"
+#include "nds/arm9/sprite.h"
 #include "nds/arm9/trig_lut.h"
 #include "nds/arm9/video.h"
+#include "sprite.h"
 #include "vec2d.h"
+
+#include "ball_pcx.h"
 
 #include <gl2d.h>
 #include <nds.h>
@@ -16,17 +20,17 @@
 
 #define DT                floattof32(0.1)
 #define MAX_ENTITIES      2500
-#define MAX_GRAVITY       100000
+#define MAX_GRAVITY       inttof32(1000)
 #define MAX_DRAG          floattof32(0.5)
-#define MAX_INIT_VEL      inttof32(10)
-#define MAX_VERT_STRENGTH 1000
+#define MAX_INIT_VEL      inttof32(1000)
+#define MAX_VERT_STRENGTH MAX_GRAVITY
 
-int num_entities = 1000;
+int num_entities = 10;
 int init_vel = inttof32(10);
 int gravity_strength = inttof32(10);
 int vert_strength = inttof32(10);
 // int drag = floattof32(0.001);
-int drag = 64;
+int drag = 100;
 int mass_range = floattof32(0.01); // +/- 1.0 fixed
 
 typedef struct
@@ -251,16 +255,50 @@ void remove_grav_point(unsigned int offset)
         grav_points[offset].on = false;
 }
 
+typedef struct {
+} Widget;
+
+#define MAX_HORZ_ROWS 5
+typedef struct {
+    int num_rows;
+    Widget* widgets[MAX_HORZ_ROWS];
+} HorizontalLayout;
+
 int main()
 {
-    consoleDemoInit();
+    PrintConsole bottomConsole;
 
-    videoSetMode(MODE_5_3D);
 
-    consoleDemoInit();
+
+    videoSetMode(MODE_0_3D);
+
+	videoSetModeSub(MODE_0_2D | DISPLAY_BG0_ACTIVE |
+					DISPLAY_SPR_1D_LAYOUT |
+					DISPLAY_SPR_ACTIVE);
+
+    vramSetBankA(VRAM_A_TEXTURE);      // 128 KB texture VRAM
+    vramSetBankB(VRAM_B_TEXTURE);      // 128 KB texture VRAM
+    vramSetBankC(VRAM_C_SUB_BG); 
+    vramSetBankD(VRAM_D_SUB_SPRITE);   // bottom sprite graphics
 
     glScreen2D();
 
+    consoleInit(
+        &bottomConsole,
+        0,                 // BG layer
+        BgType_Text4bpp,
+        BgSize_T_256x256,
+        31,                // map base, high end of BG VRAM
+        0,                 // tile base
+        false,             // false = sub screen
+        true
+    );
+
+    consoleSelect(&bottomConsole);
+    u16 *map = bgGetMapPtr(bottomConsole.bgId);
+    dmaFillHalfWords(0, map, 32 * 32 * sizeof(u16));
+
+    consoleClear();
     int frame = 0;
     touchPosition touchXY;
 
@@ -271,7 +309,50 @@ int main()
         .y = inttof32(HALF_HEIGHT),
     };
 
-    register_grav_point(middle, floattof32(100));
+    //register_grav_point(middle, floattof32(1));
+
+    initOAM();
+
+	sImage ball;
+
+    int i;
+
+	//load our ball pcx file into an image
+	loadPCX((u8*)ball_pcx, &ball);
+	imageTileData(&ball);
+
+	for(i = 0; i < 256; i++)
+		SPRITE_PALETTE_SUB[i] = ball.palette[i];
+
+	for(i = 0; i< 32*16; i++)
+		SPRITE_GFX_SUB[i] = ball.image.data16[i];
+
+	Sprite sprites[1];
+	for(i = 0; i < 1; i++) {
+		//random place and speed
+		sprites[i].x = rand() & 0xFFFF;
+		sprites[i].y = rand() & 0x7FFF;
+		sprites[i].dx = (rand() & 0xFF) + 0x100;
+		sprites[i].dy = (rand() & 0xFF) + 0x100;
+
+		if(rand() & 1)
+			sprites[i].dx = -sprites[i].dx;
+		if(rand() & 1)
+			sprites[i].dy = -sprites[i].dy;
+
+		sprites[i].oam = getOAMCopySub(i);
+		sprites[i].gfxID = 0;
+
+		//set up our sprites OAM entry attributes
+		sprites[i].oam->attribute[0] = ATTR0_COLOR_256 | ATTR0_SQUARE;
+		sprites[i].oam->attribute[1] = ATTR1_SIZE_32;
+		sprites[i].oam->attribute[2] = sprites[i].gfxID;
+	}
+
+    // make this configurable
+	BG_PALETTE_SUB[0] = RGB15(10,10,10);
+	//BG_PALETTE_SUB[1] = RGB15(0,16,0);
+	//BG_PALETTE_SUB[2] = RGB15(0,0,31);
 
     while (pmMainLoop())
     {
@@ -280,7 +361,7 @@ int main()
         has_grav_point = touchRead(&touchXY);
 
         scanKeys();
-        int pressed = keysDown();
+        int pressed = keysDownRepeat();
         if (pressed & KEY_UP)
         {
             int incr = (num_entities >= 100) ? 100 : (num_entities >= 10) ? 10 : 1;
@@ -297,13 +378,13 @@ int main()
         }
         if (pressed & KEY_RIGHT)
         {
-            gravity_strength += 1000;
+            gravity_strength += inttof32(1);
             if (gravity_strength > MAX_GRAVITY)
                 gravity_strength = MAX_GRAVITY;
         }
         if (pressed & KEY_LEFT)
         {
-            gravity_strength -= 1000;
+            gravity_strength -= inttof32(1);
             if (gravity_strength < 1000)
                 gravity_strength = 1000;
         }
@@ -321,7 +402,7 @@ int main()
         }
         if (pressed & KEY_A)
         {
-            init_vel += floattof32(0.1);
+            init_vel += inttof32(1);
             if (init_vel > MAX_INIT_VEL)
                 init_vel = MAX_INIT_VEL;
         }
@@ -333,13 +414,13 @@ int main()
         }
         if (pressed & KEY_R)
         {
-            vert_strength += 100;
+            vert_strength += inttof32(1);
             if (vert_strength > MAX_VERT_STRENGTH)
                 vert_strength = MAX_VERT_STRENGTH;
         }
         if (pressed & KEY_L)
         {
-            vert_strength -= 100;
+            vert_strength -= inttof32(1);
             if (vert_strength < 0)
                 vert_strength = 0;
         }
@@ -363,10 +444,15 @@ int main()
 
         print_config();
 
+        MoveSprite(&sprites[0]);
+
         glFlush(0);
 
         if (has_grav_point)
             remove_grav_point(reg);
+
+        updateOAM();
+
     }
 
     return 0;
