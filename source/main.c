@@ -22,10 +22,10 @@ void print_config(void)
     iprintf("\x1b[3;1HEntities:  %7d UP/DOWN", g_game_vars.num_entities);
     iprintf("\x1b[4;1HGrav Well: %7d LEFT/RIGHT", g_game_vars.gravity_strength);
     iprintf("\x1b[5;1HGrav Floor:%7d R+UP/DOWN", g_game_vars.vert_strength);
-    iprintf("\x1b[6;1HMass Range:%7d R+LEFT/RIGHT", g_game_vars.mass_range); // do this
+    iprintf("\x1b[6;1HMass Range:%7d R+LEFT/RIGHT", g_game_vars.mass_range);
     iprintf("\x1b[7;1HDrag:      %7d L+UP/DOWN", g_game_vars.drag);
     iprintf("\x1b[8;1HReset Vel: %7d L+LEFT/RIGHT", g_game_vars.init_vel);
-    iprintf("\x1b[9;1HSim Time:  %7d L+A/B", g_game_vars.dt); // do this
+    iprintf("\x1b[9;1HSim Time:  %7d L+A/B", g_game_vars.dt);
     iprintf(
         "\x1b[10;1HDirection: %7s X/Y",
         g_game_vars.grav_dir == GRAV_WELL_ATTRACT ? "Attract" : "Repulse"
@@ -37,7 +37,7 @@ void print_config(void)
 }
 
 GameVariables g_game_vars = {
-    .mass_range = floattof32(0.1),
+    .mass_range = 400,
     .init_vel = floattof32(10.0),
     .num_entities = 10,
     .gravity_strength = floattof32(1.0),
@@ -199,6 +199,20 @@ int main()
                 g_game_vars.vert_strength -= inttof32(1);
                 if (g_game_vars.vert_strength < 0)
                     g_game_vars.vert_strength = 0;
+            }
+            if (pressed & KEY_RIGHT)
+            {
+                g_game_vars.mass_range += 100;
+                if (g_game_vars.mass_range > MAX_MASS_RANGE)
+                    g_game_vars.mass_range = MAX_MASS_RANGE;
+                randomize_masses();
+            }
+            if (pressed & KEY_LEFT)
+            {
+                g_game_vars.mass_range -= 100;
+                if (g_game_vars.mass_range < MIN_MASS_RANGE)
+                    g_game_vars.mass_range = MIN_MASS_RANGE;
+                randomize_masses();
             }
         }
         else

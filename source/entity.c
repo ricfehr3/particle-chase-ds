@@ -79,23 +79,30 @@ void update_entities(void)
     }
 }
 
+void randomize_masses(void)
+{
+    for (int i = 0; i < MAX_ENTITIES; i++)
+    {
+        entities[i].rb.mass = get_rand_mass();
+    }
+}
+
 void init_entities(bool reset_pos)
 {
     for (int i = 0; i < MAX_ENTITIES; i++)
     {
         if (reset_pos)
+        {
             entities[i] = build_default_entity();
-
-        if (reset_pos)
-            entities[i].rb.mass = get_rand_mass();
-
-        Vec2d rand_screen_pos = get_rand_screen_coord();
-
-        if (reset_pos)
+            Vec2d rand_screen_pos = get_rand_screen_coord();
             entities[i].rb.pos = vec2d_int_to_fixed(rand_screen_pos);
+        }
 
         entities[i].rb.vel = get_rand_starting_vel();
     }
+
+    if(reset_pos)
+        randomize_masses();
 }
 
 void display_entities(void)

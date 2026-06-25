@@ -14,5 +14,6 @@ typedef struct
 
 void update_entities(void);
 
+void randomize_masses(void);
 void init_entities(bool reset_pos);
 void display_entities(void);
