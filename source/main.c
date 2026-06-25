@@ -17,6 +17,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+int grav_head = -1;
+int grav_stack[MAX_GRAV_POINTS] = {0};
+
+#define VERSION "v0.0.1"
+
 void print_config(void)
 {
     iprintf("\x1b[3;1HEntities:  %7d UP/DOWN", g_game_vars.num_entities);
@@ -34,17 +39,35 @@ void print_config(void)
         "\x1b[11;1HMode:      %7s A/B",
         g_game_vars.grav_type == GRAV_WELL_NORMAL ? "Normal" : "Spring"
     );
+    iprintf("\x1b[13;1HSave Pos:          Touch+L+R");
+    iprintf("\x1b[14;1HDelete Last:       L+Y");
+    iprintf("\x1b[15;1HRandom Pos/Vels:   Start");
+    iprintf("\x1b[16;1HRandom Vels:       Select");
+    iprintf("\x1b[17;1HReset All:         R+Start");
+
+    iprintf("\x1b[23;1H                RF3 2026 %6s", VERSION);
 }
 
 GameVariables g_game_vars = {
-    .mass_range = 400,
-    .init_vel = floattof32(10.0),
-    .num_entities = 10,
-    .gravity_strength = floattof32(1.0),
-    .vert_strength = floattof32(10.0),
-    .drag = floattof32(0.001),
-    .dt = 400,
+    .mass_range = DEFAULT_MASS_RANGE,
+    .init_vel = DEFAULT_INIT_VEL,
+    .num_entities = DEFAULT_NUM_ENTITIES,
+    .gravity_strength = DEFAULT_GRAVITY_STRENGTH,
+    .vert_strength = DEFAULT_VERT_STRENGTH,
+    .drag = DEFAULT_DRAG,
+    .dt = DEFAULT_DT,
 };
+
+void reset_game_variables()
+{
+    g_game_vars.mass_range = DEFAULT_MASS_RANGE;
+    g_game_vars.init_vel = DEFAULT_INIT_VEL;
+    g_game_vars.num_entities = DEFAULT_NUM_ENTITIES;
+    g_game_vars.gravity_strength = DEFAULT_GRAVITY_STRENGTH;
+    g_game_vars.vert_strength = DEFAULT_VERT_STRENGTH;
+    g_game_vars.drag = DEFAULT_DRAG;
+    g_game_vars.dt = DEFAULT_DT;
+}
 
 int main()
 {
@@ -146,15 +169,21 @@ int main()
             .y = inttof32(touchXY.py),
         };
 
-        if (pressed & KEY_L && pressed & KEY_R)
+        if ((keysHeld() & KEY_L && pressed & KEY_R) || (keysHeld() & KEY_R && pressed & KEY_L))
         {
             if (pen_is_down)
-                register_grav_point(
+            {
+                int val = register_grav_point(
                     touch_fixed,
                     g_game_vars.gravity_strength,
                     g_game_vars.grav_type,
                     g_game_vars.grav_dir
                 );
+                if(val != -1)
+                {
+                    grav_stack[++grav_head] = val;
+                }
+            }
         }
         else if (keysHeld() & KEY_L)
         {
@@ -202,6 +231,13 @@ int main()
                 if (g_game_vars.dt < 0)
                     g_game_vars.dt = 0;
             }
+            if (pressed & KEY_X)
+            {
+                if(grav_head >= 0)
+                {
+                    remove_grav_point(grav_stack[grav_head--]);
+                }
+            }
         }
         else if (keysHeld() & KEY_R)
         {
@@ -230,6 +266,12 @@ int main()
                 if (g_game_vars.mass_range < MIN_MASS_RANGE)
                     g_game_vars.mass_range = MIN_MASS_RANGE;
                 randomize_masses();
+            }
+            if (pressed & KEY_START)
+            {
+                remove_all_grav_points();
+                init_entities(true);
+                reset_game_variables();
             }
         }
         else
@@ -282,7 +324,6 @@ int main()
             }
             if (pressed & KEY_START)
             {
-                remove_all_grav_points();
                 init_entities(true);
             }
             if (pressed & KEY_SELECT)

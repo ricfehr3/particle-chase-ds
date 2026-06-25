@@ -3,7 +3,7 @@
 #include "stdbool.h"
 #include "vec2d.h"
 
-#define MAX_GRAVITY     inttof32(1000)
+#define MAX_GRAVITY     inttof32(100)
 #define MAX_GRAV_POINTS 10
 
 enum GravWellTypes
