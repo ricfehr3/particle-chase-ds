@@ -50,7 +50,7 @@ int main()
 {
     PrintConsole bottomConsole;
 
-    bool has_grav_point = false;
+    bool pen_is_down = false;
 
     videoSetMode(MODE_0_3D);
 
@@ -130,16 +130,33 @@ int main()
 
     while (pmMainLoop())
     {
-        has_grav_point = touchRead(&touchXY);
+        pen_is_down = touchRead(&touchXY);
 
-        if (has_grav_point)
+        if (pen_is_down)
             sprites[0].x = inttof32(touchXY.px) - ball_center_offset;
         else
             sprites[0].x = inttof32(HALF_WIDTH) - ball_center_offset;
 
         scanKeys();
+
         int pressed = keysDownRepeat();
-        if (keysHeld() & KEY_L)
+
+        Vec2d touch_fixed = {
+            .x = inttof32(touchXY.px),
+            .y = inttof32(touchXY.py),
+        };
+
+        if (pressed & KEY_L && pressed & KEY_R)
+        {
+            if (pen_is_down)
+                register_grav_point(
+                    touch_fixed,
+                    g_game_vars.gravity_strength,
+                    g_game_vars.grav_type,
+                    g_game_vars.grav_dir
+                );
+        }
+        else if (keysHeld() & KEY_L)
         {
             if (pressed & KEY_UP)
             {
@@ -153,13 +170,13 @@ int main()
                 if (g_game_vars.drag < 0)
                     g_game_vars.drag = 0;
             }
-            if (pressed & KEY_LEFT)
+            if (pressed & KEY_RIGHT)
             {
                 g_game_vars.init_vel += inttof32(1);
                 if (g_game_vars.init_vel > MAX_INIT_VEL)
                     g_game_vars.init_vel = MAX_INIT_VEL;
             }
-            if (pressed & KEY_RIGHT)
+            if (pressed & KEY_LEFT)
             {
                 g_game_vars.init_vel -= floattof32(0.1);
                 if (g_game_vars.init_vel < 0)
@@ -263,35 +280,19 @@ int main()
             {
                 g_game_vars.grav_type = GRAV_WELL_SPRING;
             }
-        }
-
-        if (pressed & KEY_START)
-        {
-            if (has_grav_point)
+            if (pressed & KEY_START)
+            {
                 remove_all_grav_points();
-            init_entities(true);
+                init_entities(true);
+            }
+            if (pressed & KEY_SELECT)
+            {
+                init_entities(false);
+            }
         }
-
-        Vec2d touch_fixed = {
-            .x = inttof32(touchXY.px),
-            .y = inttof32(touchXY.py),
-        };
-
-        if (pressed & KEY_SELECT)
-        {
-            if (has_grav_point)
-                register_grav_point(
-                    touch_fixed,
-                    g_game_vars.gravity_strength,
-                    g_game_vars.grav_type,
-                    g_game_vars.grav_dir
-                );
-            init_entities(false);
-        }
-
 
         int reg = -1;
-        if (has_grav_point)
+        if (pen_is_down)
             reg = register_grav_point(
                 touch_fixed,
                 g_game_vars.gravity_strength,
@@ -310,7 +311,7 @@ int main()
 
         glFlush(0);
 
-        if (has_grav_point)
+        if (pen_is_down)
             remove_grav_point(reg);
 
         // updateOAM();

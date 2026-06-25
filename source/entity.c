@@ -71,9 +71,9 @@ void update_entities(void)
             rb->acc.y = g_game_vars.vert_strength;
         }
 
-        rb->vel = vec2d_fixed_scalar_mult(rb->vel, inttof32(1) - g_game_vars.drag);
-
         update_rigidbody(rb);
+
+        rb->vel = vec2d_fixed_scalar_mult(rb->vel, inttof32(1) - mulf32(g_game_vars.drag, g_game_vars.dt));
 
         e->screen_pos = vec2d_fixed_to_int(rb->pos);
     }
