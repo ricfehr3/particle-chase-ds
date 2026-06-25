@@ -39,8 +39,8 @@ void print_config(void)
         "\x1b[11;1HMode:      %7s A/B",
         g_game_vars.grav_type == GRAV_WELL_NORMAL ? "Normal" : "Spring"
     );
-    iprintf("\x1b[13;1HSave Pos:          Touch+L+R");
-    iprintf("\x1b[14;1HDelete Last:       L+Y");
+    iprintf("\x1b[13;1HSave Pos:          Touch+L/R");
+    iprintf("\x1b[14;1HDelete Last:       L+X");
     iprintf("\x1b[15;1HRandom Pos/Vels:   Start");
     iprintf("\x1b[16;1HRandom Vels:       Select");
     iprintf("\x1b[17;1HReset All:         R+Start");
@@ -169,20 +169,17 @@ int main()
             .y = inttof32(touchXY.py),
         };
 
-        if ((keysHeld() & KEY_L && pressed & KEY_R) || (keysHeld() & KEY_R && pressed & KEY_L))
+        if ((pressed & KEY_R || pressed & KEY_L) && pen_is_down)
         {
-            if (pen_is_down)
+            int val = register_grav_point(
+                touch_fixed,
+                g_game_vars.gravity_strength,
+                g_game_vars.grav_type,
+                g_game_vars.grav_dir
+            );
+            if(val != -1)
             {
-                int val = register_grav_point(
-                    touch_fixed,
-                    g_game_vars.gravity_strength,
-                    g_game_vars.grav_type,
-                    g_game_vars.grav_dir
-                );
-                if(val != -1)
-                {
-                    grav_stack[++grav_head] = val;
-                }
+                grav_stack[++grav_head] = val;
             }
         }
         else if (keysHeld() & KEY_L)
