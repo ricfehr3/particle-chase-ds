@@ -233,7 +233,24 @@ int main()
                 if (g_game_vars.gravity_strength < 0)
                     g_game_vars.gravity_strength = 0;
             }
+            if (pressed & KEY_X)
+            {
+                g_game_vars.grav_dir = GRAV_WELL_ATTRACT;
+            }
+            if (pressed & KEY_Y)
+            {
+                g_game_vars.grav_dir = GRAV_WELL_REPULSE;
+            }
+            if (pressed & KEY_A)
+            {
+                g_game_vars.grav_type = GRAV_WELL_NORMAL;
+            }
+            if (pressed & KEY_B)
+            {
+                g_game_vars.grav_type = GRAV_WELL_SPRING;
+            }
         }
+
         if (pressed & KEY_START)
         {
             if (has_grav_point)
@@ -258,22 +275,6 @@ int main()
             init_entities(false);
         }
 
-        if (pressed & KEY_X)
-        {
-            g_game_vars.grav_dir = GRAV_WELL_ATTRACT;
-        }
-        if (pressed & KEY_Y)
-        {
-            g_game_vars.grav_dir = GRAV_WELL_REPULSE;
-        }
-        if (pressed & KEY_A)
-        {
-            g_game_vars.grav_type = GRAV_WELL_NORMAL;
-        }
-        if (pressed & KEY_B)
-        {
-            g_game_vars.grav_type = GRAV_WELL_SPRING;
-        }
 
         int reg = -1;
         if (has_grav_point)
