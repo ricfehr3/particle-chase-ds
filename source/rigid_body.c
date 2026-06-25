@@ -11,7 +11,7 @@ int gravity_strength = inttof32(10);
 
 void update_rigidbody(RigidBody* rb)
 {
-    rb->vel = vec2d_add(rb->vel, vec2d_fixed_scalar_mult(rb->acc, DT));
+    rb->vel = vec2d_add(rb->vel, vec2d_fixed_scalar_mult(rb->acc, g_game_vars.dt));
 
     const int epsilon = 10;
     if (abs(rb->vel.x) < epsilon)
@@ -19,7 +19,7 @@ void update_rigidbody(RigidBody* rb)
     if (abs(rb->vel.y) < epsilon)
         rb->vel.y = 0;
 
-    rb->pos = vec2d_add(rb->pos, vec2d_fixed_scalar_mult(rb->vel, DT));
+    rb->pos = vec2d_add(rb->pos, vec2d_fixed_scalar_mult(rb->vel, g_game_vars.dt));
 
     if (rb->pos.x >= SCREEN_WIDTH_FIXED || rb->pos.x < 0)
     {
