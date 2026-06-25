@@ -1,3 +1,4 @@
+#include "nds/arm9/input.h"
 #include "nds/arm9/math.h"
 #include "nds/arm9/sprite.h"
 #include "nds/arm9/trig_lut.h"
@@ -27,6 +28,8 @@ void print_config(void)
     iprintf("\x1b[7;1HDrag:       %10d", g_game_vars.drag);
     iprintf("\x1b[8;1HMass Range: %10d", g_game_vars.mass_range);
     iprintf("\x1b[9;1HDT:         %10d", DT);
+    iprintf("\x1b[10;1HMode:       %10s", g_game_vars.grav_type == GRAV_WELL_NORMAL ? "Normal" : "Spring");
+    iprintf("\x1b[11;1HDirection:  %10s", g_game_vars.grav_dir == GRAV_WELL_ATTRACT ? "Attract" : "Repulse");
 }
 
 GameVariables g_game_vars = {
@@ -34,7 +37,7 @@ GameVariables g_game_vars = {
     .init_vel = floattof32(10.0),
     .num_entities = 10,
     .gravity_strength = floattof32(1.0),
-    .vert_strength = floattof32(1.0),
+    .vert_strength = floattof32(10.0),
     .drag = floattof32(0.001),
 };
 
@@ -82,8 +85,6 @@ int main()
         .x = inttof32(HALF_WIDTH),
         .y = inttof32(HALF_HEIGHT),
     };
-
-    //register_grav_point(middle, floattof32(1));
 
     initOAM();
 
@@ -140,67 +141,76 @@ int main()
 
         scanKeys();
         int pressed = keysDownRepeat();
-        if (pressed & KEY_UP)
+        if(keysHeld() & KEY_L)
         {
-            int incr = (g_game_vars.num_entities >= 100) ? 100 : (g_game_vars.num_entities >= 10) ? 10 : 1;
-            g_game_vars.num_entities += incr;
-            if (g_game_vars.num_entities > MAX_ENTITIES)
-                g_game_vars.num_entities = MAX_ENTITIES;
+            if (pressed & KEY_UP)
+            {
+                g_game_vars.drag += floattof32(0.001);
+                if (g_game_vars.drag > MAX_DRAG)
+                    g_game_vars.drag = MAX_DRAG;
+            }
+            if (pressed & KEY_DOWN)
+            {
+                g_game_vars.drag -= floattof32(0.001);
+                if (g_game_vars.drag < 0)
+                    g_game_vars.drag = 0;
+            }
+            if (pressed & KEY_LEFT)
+            {
+                g_game_vars.init_vel += inttof32(1);
+                if (g_game_vars.init_vel > MAX_INIT_VEL)
+                    g_game_vars.init_vel = MAX_INIT_VEL;
+            }
+            if (pressed & KEY_RIGHT)
+            {
+                g_game_vars.init_vel -= floattof32(0.1);
+                if (g_game_vars.init_vel < 0)
+                    g_game_vars.init_vel = 0;
+            }
         }
-        if (pressed & KEY_DOWN)
+        else if(keysHeld() & KEY_R)
         {
-            int incr = (g_game_vars.num_entities > 100) ? 100 : (g_game_vars.num_entities > 10) ? 10 : 1;
-            g_game_vars.num_entities -= incr;
-            if (g_game_vars.num_entities < 1)
-                g_game_vars.num_entities = 1;
+            if (pressed & KEY_UP)
+            {
+                g_game_vars.vert_strength += inttof32(1);
+                if (g_game_vars.vert_strength > MAX_GRAVITY)
+                    g_game_vars.vert_strength = MAX_GRAVITY;
+            }
+            if (pressed & KEY_DOWN)
+            {
+                g_game_vars.vert_strength -= inttof32(1);
+                if (g_game_vars.vert_strength < 0)
+                    g_game_vars.vert_strength = 0;
+            }
         }
-        if (pressed & KEY_RIGHT)
+        else
         {
-            g_game_vars.gravity_strength += inttof32(1);
-            if (g_game_vars.gravity_strength > MAX_GRAVITY)
-                g_game_vars.gravity_strength = MAX_GRAVITY;
-        }
-        if (pressed & KEY_LEFT)
-        {
-            g_game_vars.gravity_strength -= inttof32(1);
-            if (g_game_vars.gravity_strength < 1000)
-                g_game_vars.gravity_strength = 1000;
-        }
-        if (pressed & KEY_X)
-        {
-            g_game_vars.drag += floattof32(0.001);
-            if (g_game_vars.drag > MAX_DRAG)
-                g_game_vars.drag = MAX_DRAG;
-        }
-        if (pressed & KEY_Y)
-        {
-            g_game_vars.drag -= floattof32(0.001);
-            if (g_game_vars.drag < 0)
-                g_game_vars.drag = 0;
-        }
-        if (pressed & KEY_A)
-        {
-            g_game_vars.init_vel += inttof32(1);
-            if (g_game_vars.init_vel > MAX_INIT_VEL)
-                g_game_vars.init_vel = MAX_INIT_VEL;
-        }
-        if (pressed & KEY_B)
-        {
-            g_game_vars.init_vel -= floattof32(0.1);
-            if (g_game_vars.init_vel < 0)
-                g_game_vars.init_vel = 0;
-        }
-        if (pressed & KEY_R)
-        {
-            g_game_vars.vert_strength += inttof32(1);
-            if (g_game_vars.vert_strength > MAX_GRAVITY)
-                g_game_vars.vert_strength = MAX_GRAVITY;
-        }
-        if (pressed & KEY_L)
-        {
-            g_game_vars.vert_strength -= inttof32(1);
-            if (g_game_vars.vert_strength < 0)
-                g_game_vars.vert_strength = 0;
+            if (pressed & KEY_UP)
+            {
+                int incr = (g_game_vars.num_entities >= 100) ? 100 : (g_game_vars.num_entities >= 10) ? 10 : 1;
+                g_game_vars.num_entities += incr;
+                if (g_game_vars.num_entities > MAX_ENTITIES)
+                    g_game_vars.num_entities = MAX_ENTITIES;
+            }
+            if (pressed & KEY_DOWN)
+            {
+                int incr = (g_game_vars.num_entities > 100) ? 100 : (g_game_vars.num_entities > 10) ? 10 : 1;
+                g_game_vars.num_entities -= incr;
+                if (g_game_vars.num_entities < 1)
+                    g_game_vars.num_entities = 1;
+            }
+            if (pressed & KEY_RIGHT)
+            {
+                g_game_vars.gravity_strength += inttof32(1);
+                if (g_game_vars.gravity_strength > MAX_GRAVITY)
+                    g_game_vars.gravity_strength = MAX_GRAVITY;
+            }
+            if (pressed & KEY_LEFT)
+            {
+                g_game_vars.gravity_strength -= inttof32(1);
+                if (g_game_vars.gravity_strength < 1000)
+                    g_game_vars.gravity_strength = 1000;
+            }
         }
         if (pressed & KEY_START)
         {
@@ -217,15 +227,32 @@ int main()
         if (pressed & KEY_SELECT)
         {
             if(has_grav_point)
-                register_grav_point(touch_fixed, g_game_vars.gravity_strength);
+                register_grav_point(touch_fixed, g_game_vars.gravity_strength, g_game_vars.grav_type, g_game_vars.grav_dir);
             init_entities(false);
+        }
+
+        if (pressed & KEY_X)
+        {
+            g_game_vars.grav_dir = GRAV_WELL_ATTRACT;
+        }
+        if (pressed & KEY_Y)
+        {
+            g_game_vars.grav_dir = GRAV_WELL_REPULSE;
+        }
+        if (pressed & KEY_A)
+        {
+            g_game_vars.grav_type = GRAV_WELL_NORMAL;
+        }
+        if (pressed & KEY_B)
+        {
+            g_game_vars.grav_type = GRAV_WELL_SPRING;
         }
 
         int reg = -1;
         if (has_grav_point)
-            reg = register_grav_point(touch_fixed, g_game_vars.gravity_strength);
+            reg  = register_grav_point(touch_fixed, g_game_vars.gravity_strength, g_game_vars.grav_type, g_game_vars.grav_dir);
 
-        update_gravity_wells();
+        display_gravity_wells();
         update_entities();
 
         display_entities();

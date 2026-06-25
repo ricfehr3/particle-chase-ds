@@ -42,14 +42,27 @@ void update_entities(void)
             {
                 if (!grav_points[i].on)
                     continue;
+
                 int dist = vec2_fixed_dist(rb->pos, grav_points[i].pos);
                 int scalar = divf32(mulf32(grav_points[i].strength, rb->mass), dist);
-                // this is right
-                //Vec2d dir = vec2d_normalize(vec2d_sub(grav_points[i].pos, rb->pos));
-                // but this is fun
-                Vec2d dir = vec2d_sub(grav_points[i].pos, rb->pos);
-                rb->acc.x += mulf32(dir.x, scalar);
-                rb->acc.y += mulf32(dir.y, scalar);
+                Vec2d dir;
+                
+                switch(grav_points[i].type)
+                {
+                    case GRAV_WELL_NORMAL:
+                        dir = vec2d_normalize(vec2d_sub(grav_points[i].pos, rb->pos));
+                        break;
+                    case GRAV_WELL_SPRING:
+                        dir = vec2d_sub(grav_points[i].pos, rb->pos);
+                        break;
+                    default:
+                        break;
+                };
+
+                int sign = grav_points[i].dir == GRAV_WELL_ATTRACT ? 1 : -1;
+
+                rb->acc.x += sign * mulf32(dir.x, scalar);
+                rb->acc.y += sign * mulf32(dir.y, scalar);
             }
         }
         else
@@ -58,7 +71,6 @@ void update_entities(void)
             rb->acc.y = g_game_vars.vert_strength;
         }
 
-        //rb->vel = vec2d_add(rb->vel, vec2d_fixed_scalar_mult(rb->acc, DT));
         rb->vel = vec2d_fixed_scalar_mult(rb->vel, inttof32(1) - g_game_vars.drag);
 
         update_rigidbody(rb);
