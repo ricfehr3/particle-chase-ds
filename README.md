@@ -2,6 +2,10 @@
 
 A port of an older particle "Sim" I made to try out programming for the Nintendo DS. I was pleasantly surprised to see that [libnds](https://github.com/devkitPro/libnds) uses a simple opengl-_like_ interface. This is not optimized and there are no plans to work on it further, but I thought the result was fun enough to share.
 
+# Download
+
+[![Download on Itch.io](https://img.shields.io/badge/itch.io-%23FF0B34.svg?logo=Itch.io&logoColor=white)](https://rf3-games.itch.io/particle-chase-ds)
+
 # How to play
 
 > [!WARNING]
@@ -23,10 +27,11 @@ Use the **Stylus** to move **Gravity Wells** around the playfield.
 | **Reset Vel**  | Max random velocity on _Reset_. | _Hold_ **L** and _press_ **Left** or **Right** |
 | **Sim Time**  | Simulation speed. | _Hold_ **L** and _press_ **A** or **B** |
 | **Direction**  | "Direction" of Gravity Well. | _Press_ **X** for **Attract** or **Y** for **Repulse** |
-| **Mode**  | "Mode" of Gravity Well. **Normal**: The force is stronger ***closer*** to the Gravity Well. **Spring**: The force is stronger **farther*** from the Gravity Well. | _Press_ **A** for **Normal** Mode or **B** for **Spring** Mode |
+| **Mode**  | "Mode" of Gravity Well. **Normal**: The force is stronger ***closer*** to the Gravity Well. **Spring**: The force is stronger **Farther** from the Gravity Well. | _Press_ **A** for **Normal** Mode or **B** for **Spring** Mode |
 | **Save Pos** | Save the Gravity Well at the stylus touch point. | _Touch_ the touchpad and _press_ **L** or **R** | 
 | **Delete Last** | Delete the last placed Gravity Well. | _Hold_ **L** and _press_ **X** |
 | **Reset Entities** | Randomize the position and velocity of Entities. | _Press_ **Start** |
 | **Randomize Vels** | Randomize the velocity of Entities. | _Press_ **Select** |
 | **Cycle Color** | Set Entity Color Mode to **Static**, **Speed**, or **Random**. | _Hold_ **R** and _press_ **Select** |
 | **Reset All** | Reset game to initial state. | _Hold_ **R** and _press_ **Start** |
+
