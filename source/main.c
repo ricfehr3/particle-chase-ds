@@ -7,6 +7,7 @@
 #include "nds/arm9/sprite.h"
 #include "nds/arm9/trig_lut.h"
 #include "nds/arm9/video.h"
+#include "rand.h"
 #include "rigid_body.h"
 #include "sprite.h"
 #include "util.h"
@@ -41,9 +42,10 @@ void print_config(void)
     );
     iprintf("\x1b[13;1HSave Pos:          Touch+L/R");
     iprintf("\x1b[14;1HDelete Last:       L+X");
-    iprintf("\x1b[15;1HRandom Pos/Vels:   Start");
-    iprintf("\x1b[16;1HRandom Vels:       Select");
-    iprintf("\x1b[17;1HReset All:         R+Start");
+    iprintf("\x1b[15;1HReset Entities:    Start");
+    iprintf("\x1b[16;1HRandomize Vels:    Select");
+    iprintf("\x1b[17;1HToggle Color:      R+Select");
+    iprintf("\x1b[18;1HReset All:         R+Start");
 
     iprintf("\x1b[23;1H                RF3 2026 %6s", VERSION);
 }
@@ -56,6 +58,7 @@ GameVariables g_game_vars = {
     .vert_strength = DEFAULT_VERT_STRENGTH,
     .drag = DEFAULT_DRAG,
     .dt = DEFAULT_DT,
+    .color = false,
 };
 
 void reset_game_variables()
@@ -74,6 +77,8 @@ int main()
     PrintConsole bottomConsole;
 
     bool pen_is_down = false;
+
+    seed_rand();
 
     videoSetMode(MODE_0_3D);
 
@@ -186,13 +191,15 @@ int main()
         {
             if (pressed & KEY_UP)
             {
-                g_game_vars.drag += floattof32(0.001);
+                int incr = (g_game_vars.drag >= 500) ? 100 : (g_game_vars.drag >= 25) ? 25 : 5;
+                g_game_vars.drag += incr;
                 if (g_game_vars.drag > MAX_DRAG)
                     g_game_vars.drag = MAX_DRAG;
             }
             if (pressed & KEY_DOWN)
             {
-                g_game_vars.drag -= floattof32(0.001);
+                int incr = (g_game_vars.drag > 500) ? 100 : (g_game_vars.drag > 25) ? 25 : 5;
+                g_game_vars.drag -= incr;
                 if (g_game_vars.drag < 0)
                     g_game_vars.drag = 0;
             }
@@ -269,6 +276,11 @@ int main()
                 remove_all_grav_points();
                 init_entities(true);
                 reset_game_variables();
+            }
+            if (pressed & KEY_SELECT)
+            {
+                g_game_vars.color = !g_game_vars.color;
+                init_entities(false);
             }
         }
         else

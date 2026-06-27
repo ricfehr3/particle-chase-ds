@@ -12,7 +12,7 @@
 #define DEFAULT_NUM_ENTITIES     10
 #define DEFAULT_GRAVITY_STRENGTH floattof32(10.0)
 #define DEFAULT_VERT_STRENGTH    floattof32(10.0)
-#define DEFAULT_DRAG             floattof32(0.001)
+#define DEFAULT_DRAG             250
 #define DEFAULT_DT               400
 
 typedef struct
@@ -26,6 +26,7 @@ typedef struct
     int vert_strength;
     int drag;
     int dt;
+    bool color;
 } GameVariables;
 
 extern GameVariables g_game_vars;

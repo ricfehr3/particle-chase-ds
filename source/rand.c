@@ -2,7 +2,10 @@
 
 #include "game_variables.h"
 #include "nds.h"
+#include "nds/arm9/video.h"
 #include "stdlib.h"
+#include "time.h"
+#include "util.h"
 
 int rand_between(int min, int max)
 {
@@ -32,4 +35,19 @@ Vec2d get_rand_starting_vel(void)
     };
 
     return vec;
+}
+
+Color15 get_rand_bright_color15(void)
+{
+    Color15 r,g,b;
+    r = rand_between(0x07, 0x1F);
+    g = rand_between(0x07, 0x1F);
+    b = rand_between(0x07, 0x1F);
+
+    return RGB15(r, g, b);
+}
+
+void seed_rand(void)
+{
+    srand((unsigned)time(NULL));
 }

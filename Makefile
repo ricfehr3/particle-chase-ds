@@ -19,7 +19,7 @@ include $(DEVKITARM)/ds_rules
 # ICON is the image used to create the game icon, leave blank to use default rule
 # NITRO is a directory that will be accessible via NitroFS
 #---------------------------------------------------------------------------------
-TARGET   := sophi_and_rickeys_badass_game_deluxe_supreme
+TARGET   := particles
 BUILD    := build
 SOURCES  := source
 INCLUDES := include

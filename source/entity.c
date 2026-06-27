@@ -99,6 +99,10 @@ void init_entities(bool reset_pos)
         }
 
         entities[i].rb.vel = get_rand_starting_vel();
+        if(g_game_vars.color)
+            entities[i].color = get_rand_bright_color15();
+        else
+            entities[i].color = COLOR15_WHITE;
     }
 
     if (reset_pos)
