@@ -29,7 +29,7 @@ Use the **Stylus** to move **Gravity Wells** around the playfield.
 |----------------|------------------------------------------|----------------------------------|
 | **Entities**   | Number of dots on screen.                | _Press_ **Up** or **Down**  |
 | **Grav Well**  | Strength of the gravity well.            | _Press_ **Left** or **Right** |
-| **Grav Floor** | Strength of the downwards gravity.               | _Hold_ **R** and _press_ |
+| **Grav Floor** | Strength of the downwards gravity.               | _Hold_ **R** and _press_ **Up** or **Down** |
 | **Mass Range** | Amount of weight entities can differ by. | _Hold_ **R** and _press_ **Left** or **Right** |
 | **Drag**       | Percentage of entity velocity lost fixed scale. |  _Hold_ **L** and _press_ **Up** or **Down** |
 | **Reset Vel**  | Max random velocity on _Reset_. | _Hold_ **L** and _press_ **Left** or **Right** |
