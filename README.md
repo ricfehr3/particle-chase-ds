@@ -12,7 +12,7 @@ A port of an older particle "Sim" I made to try out programming for the Nintendo
   </a>
 </p>
 
-![Particle Chase](https://github.com/user-attachments/assets/ac32a28f-e447-4cbe-afc0-2920c4f8b8e6)
+[example2.webm](https://github.com/user-attachments/assets/104df351-faa2-4399-b847-b9a7bc78fdb0)
 
 # How to play
 
