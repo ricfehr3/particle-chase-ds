@@ -3,7 +3,7 @@
 #include "rigid_body.h"
 #include "vec2d.h"
 
-#define MAX_ENTITIES      2000
+#define MAX_ENTITIES 2000
 
 typedef struct
 {

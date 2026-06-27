@@ -177,7 +177,7 @@ int main()
                 g_game_vars.grav_type,
                 g_game_vars.grav_dir
             );
-            if(val != -1)
+            if (val != -1)
             {
                 grav_stack[++grav_head] = val;
             }
@@ -230,7 +230,7 @@ int main()
             }
             if (pressed & KEY_X)
             {
-                if(grav_head >= 0)
+                if (grav_head >= 0)
                 {
                     remove_grav_point(grav_stack[grav_head--]);
                 }

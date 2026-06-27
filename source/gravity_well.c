@@ -15,7 +15,8 @@ GravWell* gravity_wells(void)
 
 void remove_grav_point(unsigned int offset)
 {
-    if(!has_wells()) return;
+    if (!has_wells())
+        return;
     if (offset < MAX_GRAV_POINTS)
     {
         grav_points[offset].on = false;
@@ -25,7 +26,7 @@ void remove_grav_point(unsigned int offset)
 
 void remove_all_grav_points(void)
 {
-    for(int i = 0; i < MAX_GRAV_POINTS; i++)
+    for (int i = 0; i < MAX_GRAV_POINTS; i++)
     {
         grav_points[i].on = false;
     }
@@ -65,7 +66,8 @@ void display_gravity_wells(void)
 
         int bb = 1;                                        // box boundary
         Vec2d bo = vec2d_fixed_to_int(grav_points[i].pos); // box origin
-        Color15 col = (grav_points[i].dir == GRAV_WELL_ATTRACT) ? RGB15(0, 0, 0x1F) : RGB15(0x1F, 0, 0);
+        Color15 col =
+            (grav_points[i].dir == GRAV_WELL_ATTRACT) ? RGB15(0, 0, 0x1F) : RGB15(0x1F, 0, 0);
         col |= (grav_points[i].type == GRAV_WELL_NORMAL) ? RGB15(0, 0, 0) : RGB15(0, 0x1F, 0);
         glBoxFilled(bo.x - bb, bo.y - bb, bo.x + bb, bo.y + bb, col);
     }

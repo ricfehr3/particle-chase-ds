@@ -77,9 +77,5 @@ Vec2d vec2d_normalize(Vec2d v)
     if (len == 0)
         return (Vec2d){0, 0};
 
-    return (Vec2d){
-        divf32(v.x, len),
-        divf32(v.y, len)
-    };
+    return (Vec2d){divf32(v.x, len), divf32(v.y, len)};
 }
-

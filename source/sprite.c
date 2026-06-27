@@ -1,4 +1,5 @@
 #include "sprite.h"
+
 #include "nds/arm9/math.h"
 #include "sys/_types.h"
 
@@ -6,7 +7,8 @@ SpriteEntry OAMCopySub[128];
 
 SpriteEntry* getOAMCopySub(unsigned int at)
 {
-    if (at < 128) return &OAMCopySub[at];
+    if (at < 128)
+        return &OAMCopySub[at];
 }
 
 void initOAM(void)

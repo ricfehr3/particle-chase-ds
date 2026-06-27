@@ -1,15 +1,13 @@
 #include "entity.h"
 
 #include "game_variables.h"
+#include "gl2d.h"
 #include "gravity_well.h"
-
+#include "nds/arm9/math.h"
 #include "rand.h"
 #include "rigid_body.h"
 #include "stdio.h"
 #include "util.h"
-
-#include "nds/arm9/math.h"
-#include "gl2d.h"
 #include "vec2d.h"
 
 #include <stdbool.h>
@@ -20,7 +18,6 @@
         .screen_pos = DEFAULT_VEC2D, \
         .color = COLOR15_WHITE,      \
     }
-
 
 Entity entities[MAX_ENTITIES];
 
@@ -36,7 +33,7 @@ void update_entities(void)
         Entity* e = &entities[i];
 
         auto rb = &e->rb;
-        if(has_wells())
+        if (has_wells())
         {
             for (int i = 0; i < MAX_GRAV_POINTS; i++)
             {
@@ -46,8 +43,8 @@ void update_entities(void)
                 int dist = vec2_fixed_dist(rb->pos, grav_points[i].pos);
                 int scalar = divf32(mulf32(grav_points[i].strength, rb->mass), dist);
                 Vec2d dir;
-                
-                switch(grav_points[i].type)
+
+                switch (grav_points[i].type)
                 {
                     case GRAV_WELL_NORMAL:
                         dir = vec2d_normalize(vec2d_sub(grav_points[i].pos, rb->pos));
@@ -73,7 +70,10 @@ void update_entities(void)
 
         update_rigidbody(rb);
 
-        rb->vel = vec2d_fixed_scalar_mult(rb->vel, inttof32(1) - mulf32(g_game_vars.drag, g_game_vars.dt));
+        rb->vel = vec2d_fixed_scalar_mult(
+            rb->vel,
+            inttof32(1) - mulf32(g_game_vars.drag, g_game_vars.dt)
+        );
 
         e->screen_pos = vec2d_fixed_to_int(rb->pos);
     }
@@ -101,7 +101,7 @@ void init_entities(bool reset_pos)
         entities[i].rb.vel = get_rand_starting_vel();
     }
 
-    if(reset_pos)
+    if (reset_pos)
         randomize_masses();
 }
 

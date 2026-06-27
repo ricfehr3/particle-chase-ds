@@ -11,7 +11,6 @@ typedef struct
     int gfxID;        // graphics lovation
 } Sprite;
 
-
 void initOAM(void);
 void MoveSprite(Sprite* sp);
 void updateOAM(void);

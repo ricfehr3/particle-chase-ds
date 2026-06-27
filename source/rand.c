@@ -1,10 +1,8 @@
 #include "rand.h"
 
-#include "stdlib.h"
-
 #include "game_variables.h"
-
 #include "nds.h"
+#include "stdlib.h"
 
 int rand_between(int min, int max)
 {
