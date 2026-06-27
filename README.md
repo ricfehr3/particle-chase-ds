@@ -2,8 +2,6 @@
 
 A port of an older particle "Sim" I made to try out programming for the Nintendo DS. I was pleasantly surprised to see that [libnds](https://github.com/devkitPro/libnds) uses a simple opengl-_like_ interface. This is not optimized and there are no plans to work on it further, but I thought the result was fun enough to share.
 
-# Download
-
 <p align="center">
   <a href="https://rf3-games.itch.io/particle-chase-ds">
     <img

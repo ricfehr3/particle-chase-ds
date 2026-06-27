@@ -84,7 +84,7 @@ void update_entities(void)
                 0, 0x10, COLOR15_VAL_MAX, // slow 
                 COLOR15_VAL_MAX, 0x10,  0, // fast
                 vec2d_fixed_magnitude(entities[i].rb.vel),
-                5000
+                3500
             );
 
             e->color = particle_color;
