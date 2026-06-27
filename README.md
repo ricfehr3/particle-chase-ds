@@ -17,7 +17,7 @@ A port of an older particle "Sim" I made to try out programming for the Nintendo
 # How to play
 
 > [!WARNING]
-> This only works on MelonDS on PC. Apologies, I have no idea why.
+> This only works on MelonDS v1.1 on PC. Apologies, I have no idea why.
 
 The "simulation" takes place in a boxed playfield where **Gravity Wells** act as forces on moving "**Entities**".
 
