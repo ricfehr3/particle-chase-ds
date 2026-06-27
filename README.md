@@ -4,7 +4,15 @@ A port of an older particle "Sim" I made to try out programming for the Nintendo
 
 # Download
 
-[![Download on Itch.io](https://img.shields.io/badge/itch.io-%23FF0B34.svg?logo=Itch.io&logoColor=white)](https://rf3-games.itch.io/particle-chase-ds)
+<p align="center">
+  <a href="https://rf3-games.itch.io/particle-chase-ds">
+    <img
+      src="https://img.shields.io/badge/PLAY%20%2F%20DOWNLOAD-Particle%20Chase%20DS-%23FF0B34?style=for-the-badge&logo=itch.io&logoColor=white&labelColor=222222"
+      alt="Play / Download Particle Chase DS on itch.io"
+      height="60"
+    />
+  </a>
+</p>
 
 # How to play
 
