@@ -15,4 +15,5 @@ Vec2d vec2d_int_to_fixed(Vec2d in);
 Vec2d vec2d_fixed_scalar_mult(Vec2d in, int fixed_scalar);
 Vec2d vec2d_scalar_mult(Vec2d in, int scalar);
 int vec2_fixed_dist(Vec2d a, Vec2d b);
-Vec2d vec2d_normalize(Vec2d v);
+Vec2d vec2d_fixed_normalize(Vec2d v);
+int vec2d_fixed_magnitude(Vec2d v);

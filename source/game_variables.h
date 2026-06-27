@@ -1,6 +1,8 @@
 #pragma once
 
 #include "gravity_well.h"
+#include "util.h"
+
 #define MAX_DRAG       floattof32(0.9)
 #define MAX_INIT_VEL   inttof32(1000)
 #define MAX_DT         3000
@@ -26,7 +28,7 @@ typedef struct
     int vert_strength;
     int drag;
     int dt;
-    bool color;
+    enum ColorTypes color;
 } GameVariables;
 
 extern GameVariables g_game_vars;

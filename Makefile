@@ -19,7 +19,7 @@ include $(DEVKITARM)/ds_rules
 # ICON is the image used to create the game icon, leave blank to use default rule
 # NITRO is a directory that will be accessible via NitroFS
 #---------------------------------------------------------------------------------
-TARGET   := particles
+TARGET   := particle-chase
 BUILD    := build
 SOURCES  := source
 INCLUDES := include

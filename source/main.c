@@ -44,7 +44,7 @@ void print_config(void)
     iprintf("\x1b[14;1HDelete Last:       L+X");
     iprintf("\x1b[15;1HReset Entities:    Start");
     iprintf("\x1b[16;1HRandomize Vels:    Select");
-    iprintf("\x1b[17;1HToggle Color:      R+Select");
+    iprintf("\x1b[17;1HCycle Color:       R+Select");
     iprintf("\x1b[18;1HReset All:         R+Start");
 
     iprintf("\x1b[23;1H                RF3 2026 %6s", VERSION);
@@ -58,7 +58,7 @@ GameVariables g_game_vars = {
     .vert_strength = DEFAULT_VERT_STRENGTH,
     .drag = DEFAULT_DRAG,
     .dt = DEFAULT_DT,
-    .color = false,
+    .color = COLOR_STATIC,
 };
 
 void reset_game_variables()
@@ -70,6 +70,7 @@ void reset_game_variables()
     g_game_vars.vert_strength = DEFAULT_VERT_STRENGTH;
     g_game_vars.drag = DEFAULT_DRAG;
     g_game_vars.dt = DEFAULT_DT;
+    g_game_vars.color = COLOR_STATIC;
 }
 
 int main()
@@ -279,7 +280,7 @@ int main()
             }
             if (pressed & KEY_SELECT)
             {
-                g_game_vars.color = !g_game_vars.color;
+                g_game_vars.color = (g_game_vars.color + 1) % COLOR_MAX;
                 init_entities(false);
             }
         }

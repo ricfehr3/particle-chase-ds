@@ -70,12 +70,17 @@ Vec2d vec2d_sub(Vec2d a, Vec2d b)
     return out;
 }
 
-Vec2d vec2d_normalize(Vec2d v)
+Vec2d vec2d_fixed_normalize(Vec2d v)
 {
-    int len = sqrt32(mulf32(v.x, v.x) + mulf32(v.y, v.y));
+    int len = vec2d_fixed_magnitude(v);
 
     if (len == 0)
         return (Vec2d){0, 0};
 
     return (Vec2d){divf32(v.x, len), divf32(v.y, len)};
+}
+
+int vec2d_fixed_magnitude(Vec2d v)
+{
+    return sqrt32(mulf32(v.x, v.x) + mulf32(v.y, v.y));
 }

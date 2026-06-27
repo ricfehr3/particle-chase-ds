@@ -4,6 +4,7 @@
 #include "gl2d.h"
 #include "gravity_well.h"
 #include "nds/arm9/math.h"
+#include "nds/arm9/video.h"
 #include "rand.h"
 #include "rigid_body.h"
 #include "stdio.h"
@@ -47,7 +48,7 @@ void update_entities(void)
                 switch (grav_points[i].type)
                 {
                     case GRAV_WELL_NORMAL:
-                        dir = vec2d_normalize(vec2d_sub(grav_points[i].pos, rb->pos));
+                        dir = vec2d_fixed_normalize(vec2d_sub(grav_points[i].pos, rb->pos));
                         break;
                     case GRAV_WELL_SPRING:
                         dir = vec2d_sub(grav_points[i].pos, rb->pos);
@@ -76,6 +77,18 @@ void update_entities(void)
         );
 
         e->screen_pos = vec2d_fixed_to_int(rb->pos);
+
+        if(g_game_vars.color == COLOR_SPEED)
+        {
+            Color15 particle_color = lerp_color15(
+                0, 0x10, COLOR15_VAL_MAX, // slow 
+                COLOR15_VAL_MAX, 0x10,  0, // fast
+                vec2d_fixed_magnitude(entities[i].rb.vel),
+                5000
+            );
+
+            e->color = particle_color;
+        }
     }
 }
 
@@ -99,10 +112,17 @@ void init_entities(bool reset_pos)
         }
 
         entities[i].rb.vel = get_rand_starting_vel();
-        if(g_game_vars.color)
-            entities[i].color = get_rand_bright_color15();
-        else
-            entities[i].color = COLOR15_WHITE;
+        switch(g_game_vars.color)
+        {
+            case COLOR_STATIC:
+                entities[i].color = COLOR15_WHITE;
+                break;
+            case COLOR_RANDOM:
+                entities[i].color = get_rand_bright_color15();
+                break;
+            default:
+                break;
+        }
     }
 
     if (reset_pos)
