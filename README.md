@@ -12,9 +12,7 @@ A port of an older particle "Sim" I made to try out programming for the Nintendo
   </a>
 </p>
 
-[example1.webm](https://github.com/user-attachments/assets/9b92fb0a-b481-4d36-8bf0-2cae35f58f7d)
-
-[example2.webm](https://github.com/user-attachments/assets/ac32a28f-e447-4cbe-afc0-2920c4f8b8e6)
+[example.webm](https://github.com/user-attachments/assets/ac32a28f-e447-4cbe-afc0-2920c4f8b8e6)
 
 # How to play
 
